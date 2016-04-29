@@ -56,14 +56,35 @@ class AS_Blink {
   void setOff(void) {setState(0);}
   /* define blink interval */
   void setBlinkInterval(unsigned int b) {_blinkInterval=b;}
+  /* define blink time (0 for infinitely) */
+  void setTimeToBlink(unsigned int b) {_timeToBlink=b;_startBlinkTime = 0;}
   
   //void blink(void);
   void blink(void) {
     if (_blinkInterval == 0) return;
 
     unsigned long time = _fTimePtr();
-    // Zeitdifferenz zum letzten Senden
     unsigned long delayTime = 0;
+    
+    // ggf. maxBlinkTime-Delay berechnen
+    if(_timeToBlink != 0) {
+      if(_startBlinkTime == 0) {_startBlinkTime = time;}
+      else {
+        if (time < _startBlinkTime) {
+          delayTime = MAX_U_LONG - _startBlinkTime + time;
+        } else {
+          delayTime = time - _startBlinkTime;
+        }
+        if (delayTime >= _timeToBlink) {
+          setBlinkInterval(0);
+          setTimeToBlink(0);
+          setOff();
+        };
+      }
+    }
+    
+    // Zeitdifferenz zum letzten Senden
+    
     // Auf Ueberlauf pruefen
     if (time < _lastTimeBlink) {
       // Ueberlauf: Delay ist Zeit zum MaxWert plus Zeit ab Null
@@ -72,7 +93,6 @@ class AS_Blink {
       // Kein Ueberlauf: einfache Differenz
       delayTime = time - _lastTimeBlink;
     }
-
     if (delayTime < _blinkInterval) return;
     
     _blinkMark = !_blinkMark;
@@ -87,6 +107,7 @@ class AS_Blink {
   bool _blinkMark = 0;
   unsigned int _blinkInterval = 0;
   unsigned long _lastTimeBlink;
-  
+  unsigned long _timeToBlink = 0;
+  unsigned long _startBlinkTime = 0;
 };
 #endif
